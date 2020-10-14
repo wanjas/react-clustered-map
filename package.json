@@ -8,7 +8,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "tsc-build": "tsc --project tsconfig.build.json"
   },
   "keywords": [],
   "author": "",
