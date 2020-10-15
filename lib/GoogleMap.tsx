@@ -16,9 +16,13 @@ import { MapContext } from './MapContext';
 import _ from 'lodash';
 import { BoundariesAsArray, useVisibleMarkers } from './useVisibleMarkers';
 
-type GoogleMapLibrary = 'drawing' | 'geometry' | 'places' | 'visualization';
+export type GoogleMapLibrary =
+  | 'drawing'
+  | 'geometry'
+  | 'places'
+  | 'visualization';
 
-type GoogleMapProps = {
+export type GoogleMapProps = {
   [Library in GoogleMapLibrary]?: boolean;
 } & {
   markers: ReactMarker[];
@@ -29,7 +33,7 @@ type GoogleMapProps = {
   onMarkerMouseLeave?: MarkerEventHandler;
 };
 
-type GoogleMapApiProps = {
+export type GoogleMapApiProps = {
   apiKey: string;
   version?: 'weekly' | 'quarterly' | number;
 };

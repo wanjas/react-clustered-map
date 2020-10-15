@@ -1,1 +1,2 @@
-export { GoogleMap } from './GoogleMap';
+export * from './GoogleMap';
+export * from './ReactMarker';
