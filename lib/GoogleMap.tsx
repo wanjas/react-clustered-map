@@ -5,15 +5,16 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import _ from 'lodash';
 import { useScript } from './useScript';
 import { MapOverlay, Overlay } from './MapOverlay';
 import {
   MarkerComponentType,
   MarkerEventHandler,
   ReactMarker,
+  ReactMarkerComponent,
 } from './ReactMarker';
 import { MapContext } from './MapContext';
-import _ from 'lodash';
 import { BoundariesAsArray, useVisibleMarkers } from './useVisibleMarkers';
 
 export type GoogleMapLibrary =
@@ -22,15 +23,37 @@ export type GoogleMapLibrary =
   | 'places'
   | 'visualization';
 
+export type BoundsChangeEvent = {
+  bounds: google.maps.LatLngBounds;
+  center: google.maps.LatLng;
+  zoom: number;
+};
+export type BoundsChangeHandler = (
+  event: BoundsChangeEvent,
+  map: google.maps.Map,
+) => void;
+
+export type VisibleMarkersChangeEvent = {
+  markers: ReactMarker[];
+};
+export type VisibleMarkersChangeHandler = (
+  event: VisibleMarkersChangeEvent,
+  // map: google.maps.Map,
+) => void;
+
 export type GoogleMapProps = {
   [Library in GoogleMapLibrary]?: boolean;
 } & {
-  markers: ReactMarker[];
+  markers: ReactMarker<any>[];
   MarkerComponent: MarkerComponentType;
   ClusterComponent?: MarkerComponentType;
   onMarkerClick?: MarkerEventHandler;
   onMarkerMouseEnter?: MarkerEventHandler;
   onMarkerMouseLeave?: MarkerEventHandler;
+  wrapperStyle?: React.CSSProperties;
+  wrapperClassName?: string;
+  onBoundsChange?: BoundsChangeHandler;
+  onVisibleMarkersChange?: VisibleMarkersChangeHandler;
 };
 
 export type GoogleMapApiProps = {
@@ -51,6 +74,10 @@ const GoogleMapPure = React.memo<
   onMarkerClick,
   onMarkerMouseEnter,
   onMarkerMouseLeave,
+  wrapperStyle = { width: 700, height: 700 },
+  wrapperClassName = 'rcm-map-wrapper',
+  onBoundsChange,
+  onVisibleMarkersChange,
 }) {
   const wrapperRef = useRef<HTMLInputElement>(null);
   const portalRef = useRef<HTMLInputElement>(null);
@@ -96,7 +123,7 @@ const GoogleMapPure = React.memo<
   // );
 
   const setMapBoundaries = useCallback(
-    (value: google.maps.LatLngBounds, drawCount: number) => {
+    (value: google.maps.LatLngBounds, newDrawCount: number) => {
       const sw = value.getSouthWest();
       const ne = value.getNorthEast();
       const newBoundaries: BoundariesAsArray = [
@@ -109,9 +136,23 @@ const GoogleMapPure = React.memo<
       if (!_.isEqual(newBoundaries, mapBoundaries)) {
         setMapBoundariesState(newBoundaries);
       }
-      setDrawCount(drawCount);
+      setDrawCount(newDrawCount);
     },
-    [mapBoundaries, setMapBoundariesState],
+    [mapBoundaries, setMapBoundariesState, setDrawCount],
+  );
+
+  const debouncedBounce = useCallback(
+    _.debounce((mapObject: google.maps.Map<HTMLInputElement>) => {
+      if (onBoundsChange) {
+        const bounds = mapObject.getBounds();
+        const center = mapObject.getCenter();
+        const zoom = mapObject.getZoom();
+        if (bounds) {
+          onBoundsChange({ bounds, center, zoom }, mapObject);
+        }
+      }
+    }, 1000),
+    [onBoundsChange],
   );
 
   useEffect(() => {
@@ -119,15 +160,29 @@ const GoogleMapPure = React.memo<
       const mapObject = new mapsAPI.Map(wrapperRef.current, {
         zoom: 14,
         center: mapCenter,
+        minZoom: 14,
+        fullscreenControl: false,
+        mapTypeControl: false,
+        streetViewControl: false,
+        zoomControl: true,
+        zoomControlOptions: {
+          position: google.maps.ControlPosition.TOP_RIGHT,
+        },
+        clickableIcons: false,
+        gestureHandling: 'greedy',
         // mapTypeId: google.maps.MapTypeId.ROADMAP,
       });
       mapObject.addListener('click', (e) => {
         console.log(e);
         e.stop();
       });
+      mapObject.addListener('bounds_changed', () => {
+        console.log('BOUNDS!');
+        debouncedBounce(mapObject);
+      });
       setMap(mapObject);
     }
-  }, []);
+  }, [mapCenter, debouncedBounce]);
 
   const setMapBoundariesRef = useRef<typeof setMapBoundaries>(setMapBoundaries);
   setMapBoundariesRef.current = setMapBoundaries;
@@ -135,18 +190,20 @@ const GoogleMapPure = React.memo<
   useEffect(() => {
     if (map && portalRef.current) {
       const layer = new mapsAPI.OverlayView();
-      const overlay = new Overlay(
+      const newOverlay = new Overlay(
         layer,
         portalRef.current,
         setMapBoundariesRef,
       );
       layer.setMap(map);
-      setOverlay(overlay);
+      setOverlay(newOverlay);
     }
   }, [map, portalRef.current]);
 
   const wrapper = useMemo(
-    () => <div ref={wrapperRef} style={{ height: 700, width: 1000 }} />,
+    () => (
+      <div ref={wrapperRef} style={wrapperStyle} className={wrapperClassName} />
+    ),
     [],
   );
 
@@ -156,12 +213,18 @@ const GoogleMapPure = React.memo<
     wrapperRef.current?.offsetWidth || 0,
   );
 
+  useEffect(() => {
+    if (onVisibleMarkersChange) {
+      onVisibleMarkersChange({ markers: visibleMarkers });
+    }
+  }, [visibleMarkers]);
+
   // const RootDiv = root.div as React.ComponentType<{ mode: string }>;
   const portal = useMemo(
     () => (
       <MapOverlay ref={portalRef}>
         {visibleMarkers.map((m) => (
-          <ReactMarker
+          <ReactMarkerComponent
             marker={m}
             key={`marker-${m.id}`}
             map={map}
@@ -188,17 +251,17 @@ const GoogleMapPure = React.memo<
   );
 
   return (
-    <div>
+    <React.Fragment>
       <MapContext.Provider value={mapContextValue}>
         {wrapper}
         <div style={{ display: 'none' }}>{portal}</div>
       </MapContext.Provider>
 
-      <div>
-        lat: {mapCenter.lat} ; lng: {mapCenter.lng}
-      </div>
-      <div>boundaries: {JSON.stringify(mapBoundaries)}</div>
-    </div>
+      {/* <div> */}
+      {/*  lat: {mapCenter.lat} ; lng: {mapCenter.lng} */}
+      {/* </div> */}
+      {/* <div>boundaries: {JSON.stringify(mapBoundaries)}</div> */}
+    </React.Fragment>
   );
 });
 

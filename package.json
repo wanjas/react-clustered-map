@@ -6,10 +6,11 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start",
-    "tsc-build": "tsc --project tsconfig.build.json"
+    "tsc-build": "tsc --project tsconfig.build.json",
+    "tsc-build-watch": "tsc --project tsconfig.build.json --watch"
   },
   "keywords": [],
   "author": "",

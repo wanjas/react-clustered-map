@@ -9,7 +9,9 @@ type SetMapBoundariesRef = {
 
 export class Overlay {
   ref: Element;
+
   layer: google.maps.OverlayView;
+
   setMapBoundariesRef: SetMapBoundariesRef;
 
   isDragged = false;
@@ -45,6 +47,7 @@ export class Overlay {
   };
 
   drawCount = 0;
+
   draw = () => {
     // super.draw();
 
@@ -52,7 +55,7 @@ export class Overlay {
     // console.log(
     //   this.layer.getProjection().fromLatLngToDivPixel(map.getCenter()),
     // );
-    this.drawCount++;
+    this.drawCount += 1;
     if (!this.isDragged) {
       console.log(`Draw!: ${this.drawCount}`);
 
@@ -86,7 +89,12 @@ export const MapOverlay = React.forwardRef<
     <div
       ref={ref}
       className="portal"
-      style={{ background: 'red', position: 'static', width: 10, height: 10 }}
+      style={{
+        background: 'transparent',
+        position: 'static',
+        width: 10,
+        height: 10,
+      }}
       onClick={(e) => {
         e.stopPropagation();
         setCount(count + 1);

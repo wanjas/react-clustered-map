@@ -1,19 +1,25 @@
-import React, { useCallback, useContext, useMemo } from 'react';
+import _ from 'lodash';
+import React, { useCallback, useContext } from 'react';
 import { MapContext } from './MapContext';
 import { Overlay } from './MapOverlay';
+
+export type ClusterMeta = {
+  isCluster?: boolean;
+  markers?: ReactMarker[];
+};
+
+export type ReactMarker<MetaType = ClusterMeta> = {
+  id: string;
+  location: google.maps.ReadonlyLatLngLiteral;
+  meta?: MetaType & ClusterMeta;
+  // options?: google.maps.MarkerOptions;
+};
 
 export type MarkerEventHandler = (
   marker: ReactMarker,
   map: google.maps.Map,
   mapsAPI: typeof google.maps,
 ) => void;
-
-export interface ReactMarker {
-  id: string;
-  location: google.maps.ReadonlyLatLngLiteral;
-  meta?: Record<'isCluster' | 'markers' | string, any>;
-  // options?: google.maps.MarkerOptions;
-}
 
 export type MarkerComponentType = React.ComponentType<{ marker: ReactMarker }>;
 
@@ -29,58 +35,79 @@ interface ReactMarkerProps {
   onMarkerMouseLeave?: MarkerEventHandler;
 }
 
-export const ReactMarker = React.memo<ReactMarkerProps>(function ReactMarker({
-  map,
-  marker,
-  mapsAPI,
-  overlay,
-  MarkerComponent,
-  ClusterComponent,
-  onMarkerClick,
-  onMarkerMouseEnter,
-  onMarkerMouseLeave,
-}) {
-  const { boundaries } = useContext(MapContext);
+export const ReactMarkerComponent = React.memo<ReactMarkerProps>(
+  function ReactMarkerComponent({
+    map,
+    marker,
+    mapsAPI,
+    overlay,
+    MarkerComponent,
+    ClusterComponent,
+    onMarkerClick,
+    onMarkerMouseEnter,
+    onMarkerMouseLeave,
+  }) {
+    const { boundaries } = useContext(MapContext);
 
-  // const location = useMemo(() => {
-  //   return new mapsAPI.LatLng(marker.location);
-  // }, [marker.location, ...(boundaries || [])]);
+    // const location = useMemo(() => {
+    //   return new mapsAPI.LatLng(marker.location);
+    // }, [marker.location, ...(boundaries || [])]);
 
-  if (!map || !overlay) {
-    return null;
-  }
+    const position = overlay?.fromLatLngToDivPixel(
+      new mapsAPI.LatLng(marker.location),
+    );
 
-  const position = overlay.fromLatLngToDivPixel(
-    new mapsAPI.LatLng(marker.location),
-  );
+    // if (Math.abs(position.x) > 1000 || Math.abs(position.y) > 1000) {
+    //   console.log('Faraway');
+    //   return null;
+    // }
 
-  if (!position) {
-    return null;
-  }
+    // console.log(`Position: ${position.x} - ${position.y}`);
 
-  // if (Math.abs(position.x) > 1000 || Math.abs(position.y) > 1000) {
-  //   console.log('Faraway');
-  //   return null;
-  // }
+    const drawClusterComponent = ClusterComponent && marker.meta?.isCluster;
 
-  // console.log(`Position: ${position.x} - ${position.y}`);
+    const onClickHandler = useCallback(() => {
+      if (marker?.meta?.isCluster && map) {
+        const lLng = _.min(_.map(marker.meta.markers, (m) => m.location.lng))!;
+        const mLng = _.max(_.map(marker.meta.markers, (m) => m.location.lng))!;
+        const lLat = _.min(_.map(marker.meta.markers, (m) => m.location.lat))!;
+        const mLat = _.max(_.map(marker.meta.markers, (m) => m.location.lat))!;
+        map.fitBounds({ east: mLng, west: lLng, north: mLat, south: lLat }, 50);
+      }
+      if (map) {
+        console.log('click');
+        onMarkerClick?.(marker, map, mapsAPI);
+      }
+    }, [onMarkerClick, marker, map, mapsAPI]);
 
-  return (
-    <div
-      style={{
-        background: 'blue',
-        // width: 20,
-        // height: 20,
-        position: 'absolute',
-        top: position.y,
-        left: position.x,
-        transform: 'translate(-50%, -100%)',
-      }}
-      onClick={() => onMarkerClick?.(marker, map, mapsAPI)}
-      onMouseEnter={() => onMarkerMouseEnter?.(marker, map, mapsAPI)}
-      onMouseLeave={() => onMarkerMouseLeave?.(marker, map, mapsAPI)}
-    >
-      <MarkerComponent marker={marker} />
-    </div>
-  );
-});
+    if (!position) {
+      return null;
+    }
+
+    if (!map || !overlay) {
+      return null;
+    }
+
+    return (
+      <div
+        style={{
+          // background: 'blue',
+          // width: 20,
+          // height: 20,
+          position: 'absolute',
+          top: position.y,
+          left: position.x,
+          transform: 'translate(-50%, -100%)',
+        }}
+        onClick={onClickHandler}
+        onMouseEnter={() => onMarkerMouseEnter?.(marker, map, mapsAPI)}
+        onMouseLeave={() => onMarkerMouseLeave?.(marker, map, mapsAPI)}
+      >
+        {drawClusterComponent && !!ClusterComponent && (
+          <ClusterComponent marker={marker} />
+        )}
+        {!drawClusterComponent && <MarkerComponent marker={marker} />}
+      </div>
+    );
+  },
+);
