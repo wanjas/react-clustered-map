@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { ReactMarker } from './ReactMarker';
 import { use2DTree } from './use2DTree';
 
@@ -62,7 +62,7 @@ export function useVisibleMarkers(
       return tree.range(...boundaries).map((index) => markers[index]);
     }
     return [];
-  }, [tree, ...(boundaries || [0, 0, 0, 0])]);
+  }, [tree, markers, ...(boundaries || [0, 0, 0, 0])]);
 
   const visibleClusteredMarkers = useMemo(() => {
     if (boundaries && mapWidth) {
@@ -76,16 +76,23 @@ export function useVisibleMarkers(
       const visibleMarkers: ReactMarker[] = [];
       markersInBounds.forEach((marker) => {
         if (!processedMarkersIds[marker.id]) {
-          const inRadiusIndexes = tree.within(
+          let inRadiusIndexes = tree.within(
             marker.location.lat,
             marker.location.lng,
             r,
           );
-          inRadiusIndexes.forEach(
-            (i) => (processedMarkersIds[markers[i].id] = true),
+
+          inRadiusIndexes = _.filter(
+            inRadiusIndexes,
+            (index) => !processedMarkersIds[markers[index].id],
           );
 
+          inRadiusIndexes.forEach((i) => {
+            processedMarkersIds[markers[i].id] = true;
+          });
+
           visibleMarkers.push(createMarker(inRadiusIndexes, markers));
+          processedMarkersIds[marker.id] = true;
         }
       });
       return visibleMarkers;

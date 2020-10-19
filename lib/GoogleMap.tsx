@@ -41,12 +41,15 @@ export type VisibleMarkersChangeHandler = (
   // map: google.maps.Map,
 ) => void;
 
+export type SpinnerComponentType = React.ComponentType<any>;
+
 export type GoogleMapProps = {
   [Library in GoogleMapLibrary]?: boolean;
 } & {
   markers: ReactMarker<any>[];
   MarkerComponent: MarkerComponentType;
   ClusterComponent?: MarkerComponentType;
+  SpinnerComponent?: SpinnerComponentType;
   onMarkerClick?: MarkerEventHandler;
   onMarkerMouseEnter?: MarkerEventHandler;
   onMarkerMouseLeave?: MarkerEventHandler;
@@ -54,6 +57,7 @@ export type GoogleMapProps = {
   wrapperClassName?: string;
   onBoundsChange?: BoundsChangeHandler;
   onVisibleMarkersChange?: VisibleMarkersChangeHandler;
+  isLoading?: boolean;
 };
 
 export type GoogleMapApiProps = {
@@ -78,6 +82,8 @@ const GoogleMapPure = React.memo<
   wrapperClassName = 'rcm-map-wrapper',
   onBoundsChange,
   onVisibleMarkersChange,
+  isLoading = false,
+  SpinnerComponent,
 }) {
   const wrapperRef = useRef<HTMLInputElement>(null);
   const portalRef = useRef<HTMLInputElement>(null);
@@ -261,6 +267,7 @@ const GoogleMapPure = React.memo<
       {/*  lat: {mapCenter.lat} ; lng: {mapCenter.lng} */}
       {/* </div> */}
       {/* <div>boundaries: {JSON.stringify(mapBoundaries)}</div> */}
+      {isLoading && SpinnerComponent && <SpinnerComponent />}
     </React.Fragment>
   );
 });
