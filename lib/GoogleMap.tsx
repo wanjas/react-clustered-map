@@ -277,7 +277,7 @@ export const GoogleMap = React.memo<GoogleMapProps & GoogleMapApiProps>(
     const mapURL = `https://maps.googleapis.com/maps/api/js?v=weekly&libraries=geometry,drawing,places&key=${apiKey}`;
     const status = useScript(mapURL);
 
-    if (status !== 'ready') {
+    if (status !== 'ready' && !window.google?.maps) {
       return null;
     }
 
