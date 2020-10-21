@@ -58,6 +58,8 @@ export type GoogleMapProps = {
   onBoundsChange?: BoundsChangeHandler;
   onVisibleMarkersChange?: VisibleMarkersChangeHandler;
   isLoading?: boolean;
+  center?: google.maps.LatLngLiteral;
+  zoom?: number;
 };
 
 export type GoogleMapApiProps = {
@@ -84,6 +86,11 @@ const GoogleMapPure = React.memo<
   onVisibleMarkersChange,
   isLoading = false,
   SpinnerComponent,
+  center: extCenter = {
+    lat: 35.6228495,
+    lng: 139.7229018,
+  },
+  zoom: extZoom = 14,
 }) {
   const wrapperRef = useRef<HTMLInputElement>(null);
   const portalRef = useRef<HTMLInputElement>(null);
@@ -98,10 +105,7 @@ const GoogleMapPure = React.memo<
     [setDrawCountState],
   );
 
-  const [mapCenter] = useState({
-    lat: 35.6228495,
-    lng: 139.7229018,
-  });
+  const [mapCenter] = useState(extCenter);
 
   const [
     mapBoundaries,
@@ -164,7 +168,7 @@ const GoogleMapPure = React.memo<
   useEffect(() => {
     if (wrapperRef.current) {
       const mapObject = new mapsAPI.Map(wrapperRef.current, {
-        zoom: 14,
+        zoom: extZoom,
         center: mapCenter,
         minZoom: 14,
         fullscreenControl: false,
