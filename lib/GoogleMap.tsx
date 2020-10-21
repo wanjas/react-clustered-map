@@ -170,7 +170,7 @@ const GoogleMapPure = React.memo<
       const mapObject = new mapsAPI.Map(wrapperRef.current, {
         zoom: extZoom,
         center: mapCenter,
-        minZoom: 14,
+        minZoom: 12,
         fullscreenControl: false,
         mapTypeControl: false,
         streetViewControl: false,
