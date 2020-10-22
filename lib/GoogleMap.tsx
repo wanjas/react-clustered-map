@@ -86,7 +86,7 @@ const GoogleMapPure = React.memo<
   onVisibleMarkersChange,
   isLoading = false,
   SpinnerComponent,
-  center: extCenter = {
+  center: mapCenter = {
     lat: 35.6228495,
     lng: 139.7229018,
   },
@@ -104,8 +104,6 @@ const GoogleMapPure = React.memo<
     },
     [setDrawCountState],
   );
-
-  const [mapCenter] = useState(extCenter);
 
   const [
     mapBoundaries,
@@ -192,7 +190,7 @@ const GoogleMapPure = React.memo<
       });
       setMap(mapObject);
     }
-  }, [mapCenter, debouncedBounce]);
+  }, [debouncedBounce]);
 
   const setMapBoundariesRef = useRef<typeof setMapBoundaries>(setMapBoundaries);
   setMapBoundariesRef.current = setMapBoundaries;
@@ -209,6 +207,19 @@ const GoogleMapPure = React.memo<
       setOverlay(newOverlay);
     }
   }, [map, portalRef.current]);
+
+  useEffect(() => {
+    if (map) {
+      const center = map.getCenter();
+      console.log(center);
+      if (center.lat() !== mapCenter.lat || center.lng() !== mapCenter.lng) {
+        map.setCenter(mapCenter);
+      }
+      if (extZoom !== map.getZoom()) {
+        map.setZoom(extZoom);
+      }
+    }
+  }, [mapCenter?.lng, mapCenter?.lat, extZoom, map]);
 
   const wrapper = useMemo(
     () => (
