@@ -6,7 +6,7 @@ import React, {
   useState,
 } from 'react';
 import _ from 'lodash';
-import { useScript } from './useScript';
+import { useScript } from './useScriptV2';
 import { MapOverlay, Overlay } from './MapOverlay';
 import {
   MarkerComponentType,
@@ -290,9 +290,12 @@ const GoogleMapPure = React.memo<
 export const GoogleMap = React.memo<GoogleMapProps & GoogleMapApiProps>(
   function GoogleMap({ apiKey, version = 'weekly', ...mapProps }) {
     const mapURL = `https://maps.googleapis.com/maps/api/js?v=weekly&libraries=geometry,drawing,places&key=${apiKey}`;
-    const status = useScript(mapURL);
+    const [isLoading, isError] = useScript({
+      src: mapURL,
+      checkForExisting: true,
+    });
 
-    if (status !== 'ready' || !window.google?.maps) {
+    if (isLoading || isError) {
       return null;
     }
 
