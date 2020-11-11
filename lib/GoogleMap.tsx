@@ -59,6 +59,7 @@ export type GoogleMapProps = {
   onVisibleMarkersChange?: VisibleMarkersChangeHandler;
   isLoading?: boolean;
   center?: google.maps.LatLngLiteral;
+  forcedBounds?: google.maps.LatLngBoundsLiteral;
   zoom?: number;
 };
 
@@ -91,6 +92,7 @@ const GoogleMapPure = React.memo<
     lng: 139.7229018,
   },
   zoom: extZoom = 14,
+  forcedBounds,
 }) {
   const wrapperRef = useRef<HTMLInputElement>(null);
   const portalRef = useRef<HTMLInputElement>(null);
@@ -189,6 +191,9 @@ const GoogleMapPure = React.memo<
         debouncedBounce(mapObject);
       });
       setMap(mapObject);
+      if (forcedBounds) {
+        mapObject.fitBounds(forcedBounds);
+      }
     }
   }, [debouncedBounce]);
 
@@ -220,6 +225,16 @@ const GoogleMapPure = React.memo<
       }
     }
   }, [mapCenter?.lng, mapCenter?.lat, extZoom, map]);
+
+  useEffect(() => {
+    if (forcedBounds && map) {
+      const currentBounds = map.getBounds();
+
+      if (currentBounds && !currentBounds.equals(forcedBounds)) {
+        map.fitBounds(forcedBounds);
+      }
+    }
+  }, [forcedBounds, map]);
 
   const wrapper = useMemo(
     () => (
