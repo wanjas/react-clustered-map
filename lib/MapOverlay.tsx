@@ -1,7 +1,4 @@
 import React, { useState } from 'react';
-import _ from 'lodash';
-
-interface MapOverlayProps {}
 
 type SetMapBoundariesRef = {
   current: (boundaries: google.maps.LatLngBounds, drawCount: number) => void;

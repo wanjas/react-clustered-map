@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import _ from 'lodash';
-import { GoogleMap } from '../lib';
-import { ReactMarker } from '../lib/ReactMarker';
+import { GoogleMap, ReactMarker } from '../lib';
 
 import markers from './sample_markers.json';
 

@@ -10,7 +10,6 @@ module.exports = {
     'plugin:@typescript-eslint/eslint-recommended',
     'plugin:@typescript-eslint/recommended',
     'prettier',
-    'prettier/@typescript-eslint',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
   ],
@@ -48,5 +47,6 @@ module.exports = {
     'react-hooks/exhaustive-deps': 'warn', // Checks effect dependencies
     'class-methods-use-this': 'warn',
     'react/prop-types': 'off',
+    'import/no-extraneous-dependencies': 'off',
   },
 };

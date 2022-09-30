@@ -1,70 +1,61 @@
 import { useState, useEffect } from 'react';
 
-export function useScript(src: string) {
-  // Keep track of script status ("idle", "loading", "ready", "error")
-  const [status, setStatus] = useState(src ? 'loading' : 'idle');
+export interface ScriptProps {
+  src: HTMLScriptElement['src'] | null;
+  checkForExisting?: boolean;
+  [key: string]: any;
+}
 
-  useEffect(
-    () => {
-      // Allow falsy src value if waiting on other data needed for
-      // constructing the script URL passed to this hook.
-      if (!src) {
-        setStatus('idle');
+type ErrorState = ErrorEvent | null;
+
+export function useScript({
+  src,
+  checkForExisting = false,
+  ...attributes
+}: ScriptProps): [boolean, ErrorState] {
+  const [loading, setLoading] = useState(Boolean(src));
+  const [error, setError] = useState<ErrorState>(null);
+
+  useEffect(() => {
+    if (!isBrowser || !src) return;
+
+    if (checkForExisting) {
+      const existing = document.querySelectorAll(`script[src="${src}"]`);
+      if (existing.length > 0) {
+        setLoading(false);
         return;
       }
+    }
 
-      // Fetch existing script element by src
-      // It may have been added by another intance of this hook
-      let script = document.querySelector(
-        `script[src="${src}"]`,
-      ) as HTMLScriptElement;
+    const scriptEl = document.createElement('script');
+    scriptEl.setAttribute('src', src);
 
-      if (!script) {
-        // Create script
-        script = document.createElement('script');
-        script.src = src;
-        script.async = true;
-        script.setAttribute('data-status', 'loading');
-        // Add script to document body
-        document.body.appendChild(script);
+    Object.keys(attributes).forEach((key) => {
+      scriptEl.setAttribute(key, attributes[key]);
+    });
 
-        // Store status in attribute on script
-        // This can be read by other instances of this hook
-        const setAttributeFromEvent = (event: Event) => {
-          script.setAttribute(
-            'data-status',
-            event.type === 'load' ? 'ready' : 'error',
-          );
-        };
+    const handleLoad = () => {
+      setLoading(false);
+    };
+    const handleError = (handlerError: ErrorEvent) => {
+      setError(handlerError);
+    };
 
-        script.addEventListener('load', setAttributeFromEvent);
-        script.addEventListener('error', setAttributeFromEvent);
-      } else {
-        // Grab existing script status from attribute and set to state.
-        setStatus((script.getAttribute('data-status') as string) || 'ready');
-      }
+    scriptEl.addEventListener('load', handleLoad);
+    scriptEl.addEventListener('error', handleError);
 
-      // Script event handler to update status in state
-      // Note: Even if the script already exists we still need to add
-      // event handlers to update the state for *this* hook instance.
-      const setStateFromEvent = (event: Event) => {
-        setStatus(event.type === 'load' ? 'ready' : 'error');
-      };
+    document.body.appendChild(scriptEl);
 
-      // Add event listeners
-      script.addEventListener('load', setStateFromEvent);
-      script.addEventListener('error', setStateFromEvent);
+    return () => {
+      scriptEl.removeEventListener('load', handleLoad);
+      scriptEl.removeEventListener('error', handleError);
+    };
+    // we need to ignore the attributes as they're a new object per call, so we'd never skip an effect call
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src]);
 
-      // Remove event listeners on cleanup
-      return () => {
-        if (script) {
-          script.removeEventListener('load', setStateFromEvent);
-          script.removeEventListener('error', setStateFromEvent);
-        }
-      };
-    },
-    [src], // Only re-run effect if script src changes
-  );
-
-  return status;
+  return [loading, error];
 }
+
+const isBrowser =
+  typeof window !== 'undefined' && typeof window.document !== 'undefined';

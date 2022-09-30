@@ -6,7 +6,7 @@ import React, {
   useState,
 } from 'react';
 import _ from 'lodash';
-import { useScript } from './useScriptV2';
+import { useScript } from './useScript';
 import { MapOverlay, Overlay } from './MapOverlay';
 import {
   MarkerComponentType,
@@ -107,10 +107,8 @@ const GoogleMapPure = React.memo<
     [setDrawCountState],
   );
 
-  const [
-    mapBoundaries,
-    setMapBoundariesState,
-  ] = useState<BoundariesAsArray | null>(null);
+  const [mapBoundaries, setMapBoundariesState] =
+    useState<BoundariesAsArray | null>(null);
 
   const mapContextValue = useMemo(
     () => ({ boundaries: mapBoundaries, drawCount }),
